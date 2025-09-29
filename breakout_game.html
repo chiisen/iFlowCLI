@@ -29,6 +29,34 @@
             font-size: 14px;
             color: #666;
         }
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        .game-over button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .restart-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .quit-btn {
+            background-color: #f44336;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -41,11 +69,20 @@
     <div class="controls">
         使用鼠標移動擋板或使用 ← → 方向鍵
     </div>
+    
+    <div id="gameOver" class="game-over">
+        <h2>遊戲結束</h2>
+        <p>您的得分: <span id="finalScore">0</span></p>
+        <button class="restart-btn" onclick="restartGame()">重新開始</button>
+        <button class="quit-btn" onclick="quitGame()">結束遊戲</button>
+    </div>
 
     <script>
         // 獲取canvas元素和上下文
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const gameOverElement = document.getElementById("gameOver");
+        const finalScoreElement = document.getElementById("finalScore");
 
         // 遊戲元素初始位置和尺寸
         const ballRadius = 10;
@@ -70,6 +107,7 @@
         let score = 0;
         let lives = 3;
         let gameRunning = true;
+        let ballVisible = true;
 
         // 創建磚塊數組
         const bricks = [];
@@ -127,6 +165,45 @@
             }
         }
 
+        // 重新開始遊戲
+        function restartGame() {
+            // 隱藏遊戲結束畫面
+            gameOverElement.style.display = "none";
+            
+            // 重置遊戲狀態
+            score = 0;
+            lives = 3;
+            gameRunning = true;
+            ballVisible = true;
+            
+            // 重置球的位置
+            x = canvas.width / 2;
+            y = canvas.height - 30;
+            dx = 2;
+            dy = -2;
+            
+            // 重置擋板位置
+            paddleX = (canvas.width - paddleWidth) / 2;
+            
+            // 重置磚塊
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    bricks[c][r].status = 1;
+                }
+            }
+            
+            // 更新UI
+            document.getElementById("score").innerText = score;
+            document.getElementById("lives").innerText = lives;
+        }
+
+        // 結束遊戲
+        function quitGame() {
+            // 可以添加其他結束遊戲的邏輯
+            gameOverElement.style.display = "none";
+            alert("感謝遊玩！");
+        }
+
         // 碰撞檢測
         function collisionDetection() {
             for (let c = 0; c < brickColumnCount; c++) {
@@ -152,6 +229,8 @@
 
         // 繪制球
         function drawBall() {
+            if (!ballVisible) return;
+            
             ctx.beginPath();
             ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
             ctx.fillStyle = "#0095DD";
@@ -229,13 +308,16 @@
                     dx = 4 * (hitPosition - 0.5); // 根據擊中位置調整水平速度
                     dy = -Math.abs(dy); // 確保球向上反彈
                 }
-                else if (y + dy > canvas.height - ballRadius) {
+                else {
                     // 球未擊中擋板
                     lives--;
                     document.getElementById("lives").innerText = lives;
                     if (lives <= 0) {
-                        alert("遊戲結束");
-                        document.location.reload();
+                        // 顯示遊戲結束畫面
+                        finalScoreElement.innerText = score;
+                        gameOverElement.style.display = "block";
+                        gameRunning = false;
+                        ballVisible = false;
                     }
                     else {
                         // 重置球的位置
@@ -245,6 +327,27 @@
                         dy = -2;
                         paddleX = (canvas.width - paddleWidth) / 2;
                     }
+                }
+            }
+            // 球超出底部邊界
+            else if (y + dy > canvas.height - ballRadius) {
+                // 球未擊中擋板
+                lives--;
+                document.getElementById("lives").innerText = lives;
+                if (lives <= 0) {
+                    // 顯示遊戲結束畫面
+                    finalScoreElement.innerText = score;
+                    gameOverElement.style.display = "block";
+                    gameRunning = false;
+                    ballVisible = false;
+                }
+                else {
+                    // 重置球的位置
+                    x = canvas.width / 2;
+                    y = canvas.height - 30;
+                    dx = 2;
+                    dy = -2;
+                    paddleX = (canvas.width - paddleWidth) / 2;
                 }
             }
             
