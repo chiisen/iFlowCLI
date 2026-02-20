@@ -26,11 +26,13 @@ const brickOffsetLeft = 30;
 // 遊戲狀態
 let score = 0;
 let lives = 3;
-let highScore = parseInt(localStorage.getItem('breakout_score_max')) || 0;
+let bestTime = localStorage.getItem('breakout_best_time') ? parseFloat(localStorage.getItem('breakout_best_time')) : null;
 let gameRunning = true;
 let ballVisible = true;
+let startTime = Date.now();
+let gameEndTime = 0;
 
-document.getElementById("highScore").innerText = highScore;
+document.getElementById("bestTime").innerText = bestTime ? bestTime.toFixed(1) : "-";
 
 // 創建磚塊數組
 const bricks = [];
@@ -98,6 +100,8 @@ function restartGame() {
     lives = 3;
     gameRunning = true;
     ballVisible = true;
+    startTime = Date.now();
+    gameEndTime = 0;
 
     // 重置球的位置
     x = canvas.width / 2;
@@ -117,7 +121,7 @@ function restartGame() {
 
     // 更新UI
     document.getElementById("score").innerText = score;
-    document.getElementById("lives").innerText = lives;
+    document.getElementById("lives").innerText = "❤️".repeat(Math.max(0, lives));
 }
 
 // 結束遊戲
@@ -139,16 +143,17 @@ function collisionDetection() {
                     score++;
                     document.getElementById("score").innerText = score;
 
-                    // 更新最高分
-                    if (score > highScore) {
-                        highScore = score;
-                        localStorage.setItem('breakout_score_max', highScore);
-                        document.getElementById("highScore").innerText = highScore;
-                    }
-
                     // 檢查是否贏得遊戲
                     if (score == brickRowCount * brickColumnCount) {
-                        alert("恭喜你贏得遊戲！");
+                        gameRunning = false;
+                        gameEndTime = Date.now();
+                        let finalTime = (gameEndTime - startTime) / 1000;
+                        if (!bestTime || finalTime < bestTime) {
+                            bestTime = finalTime;
+                            localStorage.setItem('breakout_best_time', bestTime);
+                            document.getElementById("bestTime").innerText = bestTime.toFixed(1);
+                        }
+                        alert("恭喜你贏得遊戲！過關時間: " + finalTime.toFixed(1) + " 秒");
                         document.location.reload();
                     }
                 }
@@ -201,14 +206,16 @@ function drawScore() {
     ctx.font = "16px Arial";
     ctx.fillStyle = "#0095DD";
     ctx.fillText("得分: " + score, 8, 20);
-    ctx.fillText("最高分: " + highScore, canvas.width / 2 - 45, 20);
+
+    let timeToShow = gameRunning ? (Date.now() - startTime) / 1000 : (gameEndTime ? (gameEndTime - startTime) / 1000 : 0);
+    ctx.fillText("時間: " + timeToShow.toFixed(1) + "s", canvas.width / 2 - 45, 20);
 }
 
 // 繪制生命
 function drawLives() {
     ctx.font = "16px Arial";
     ctx.fillStyle = "#0095DD";
-    ctx.fillText("生命: " + lives, canvas.width - 65, 20);
+    ctx.fillText("生命: " + "❤️".repeat(Math.max(0, lives)), canvas.width - 120, 20);
 }
 
 // 主繪制函數
@@ -242,12 +249,13 @@ function draw() {
         else {
             // 球未擊中擋板
             lives--;
-            document.getElementById("lives").innerText = lives;
+            document.getElementById("lives").innerText = "❤️".repeat(Math.max(0, lives));
             if (lives <= 0) {
                 // 顯示遊戲結束畫面
                 finalScoreElement.innerText = score;
                 gameOverElement.style.display = "block";
                 gameRunning = false;
+                gameEndTime = Date.now();
                 ballVisible = false;
             }
             else {
@@ -264,12 +272,13 @@ function draw() {
     else if (y + dy > canvas.height - ballRadius) {
         // 球未擊中擋板
         lives--;
-        document.getElementById("lives").innerText = lives;
+        document.getElementById("lives").innerText = "❤️".repeat(Math.max(0, lives));
         if (lives <= 0) {
             // 顯示遊戲結束畫面
             finalScoreElement.innerText = score;
             gameOverElement.style.display = "block";
             gameRunning = false;
+            gameEndTime = Date.now();
             ballVisible = false;
         }
         else {
